@@ -13,7 +13,7 @@ import {
   insertDatetime,
 } from './utils'
 import { Toolbar } from './toolbar'
-import { setBold, unsetBold } from './mark'
+import { canSetMark, isBold, setBold, toggleBold, unsetBold } from './mark'
 
 export const setupEditor = (el: HTMLElement | null) => {
   if (!el) return
@@ -91,6 +91,32 @@ export const setupEditor = (el: HTMLElement | null) => {
             label: '取消加粗',
             handler(props) {
               unsetBold(props.view)
+            },
+          },
+          {
+            label: 'Bold toggle',
+            handler(props) {
+              toggleBold(props.view)
+              props.view.focus()
+            },
+            update(view, _, menuDom) {
+              // 如果不能设置 mark，则为 disabled 状态，分别为 menuDom 添加或取消 disabled，当前 update 中的代码可以做封装，对 italic 之类简单的 mark 可以直接复用
+              const disabled = !canSetMark(view, 'bold')
+              if (disabled && !menuDom.getAttribute('disabled')) {
+                menuDom.setAttribute('disabled', 'true')
+                return
+              }
+              if (!disabled && menuDom.getAttribute('disabled')) {
+                menuDom.removeAttribute('disabled')
+              }
+              const isActive = isBold(view)
+              if (isActive && !menuDom.classList.contains('is-active')) {
+                menuDom.classList.add('is-active')
+              }
+
+              if (!isActive && menuDom.classList.contains('is-active')) {
+                menuDom.classList.remove('is-active')
+              }
             },
           },
         ],

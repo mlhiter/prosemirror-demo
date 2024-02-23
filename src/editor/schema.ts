@@ -153,14 +153,65 @@ export const schema = new Schema({
   },
   // 除了上面定义 node 节点，一些富文本样式，可以通过 marks 定义
   marks: {
-    // 文本加粗
-    strong: {
-      // 对于加粗的部分，使用 strong 标签包裹，加粗的内容位于 strong 标签内(这里定义的 0 与上面一致，也念做 “洞”，也类似 vue 中的 slot)
-      toDOM() {
+    // 常见的 mark
+    // 加粗 b, strong(语义化)
+    bold: {
+      toDOM: () => {
         return ['strong', 0]
       },
-      // 从别的地方复制过来的富文本，如果有 strong 标签，则被解析为一个 strong mark
-      parseDOM: [{ tag: 'strong' }],
+      parseDOM: [
+        { tag: 'strong' },
+        {
+          tag: 'b',
+          getAttrs: (domNode) =>
+            (domNode as HTMLElement).style.fontWeight !== 'normal' && null,
+        },
+        {
+          style: 'font-weight',
+          getAttrs: (value) =>
+            /^(bold(er)?|[5-9]\d{2})$/.test(value as string) && null,
+        },
+      ],
+    },
+    // 斜体 em
+    italic: {
+      group: 'heading',
+      toDOM: () => {
+        return ['em', 0]
+      },
+      parseDOM: [
+        { tag: 'em' },
+        {
+          tag: 'i',
+          getAttrs: (domNode) =>
+            (domNode as HTMLElement).style.fontStyle !== 'normal' && null,
+        },
+        { style: 'font-style=italic' },
+      ],
+    },
+    // 链接
+    link: {
+      group: 'heading',
+      attrs: {
+        href: {
+          default: null,
+        },
+        ref: {
+          default: 'noopener noreferrer nofollow',
+        },
+        target: {
+          default: '_blank',
+        },
+      },
+      toDOM: (mark) => {
+        const { href, ref, target } = mark.attrs
+        return ['a', { href, ref, target }, 0]
+      },
+      parseDOM: [
+        {
+          tag: 'a[href]:not([href *= "javascript:" i])',
+        },
+      ],
     },
   },
 })
