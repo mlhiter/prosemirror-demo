@@ -12,6 +12,8 @@ import {
   insertBlockquote,
   insertDatetime,
 } from './utils'
+import { Toolbar } from './toolbar'
+import { setBold, unsetBold } from './mark'
 
 export const setupEditor = (el: HTMLElement | null) => {
   if (!el) return
@@ -36,44 +38,68 @@ export const setupEditor = (el: HTMLElement | null) => {
   // 创建编辑器视图实例，并挂在到 el 上
   const editorView = new EditorView(editorRoot, {
     state: editorState,
+
+    dispatchTransaction(tr) {
+      let newState = editorView.state.apply(tr)
+      editorView.updateState(newState)
+      toolbar.update(editorView, editorView.state)
+    },
   })
 
-  // 添加两个 button 分别插入段落和标题
-  const btnGroup = document.createElement('div')
-  btnGroup.style.marginBottom = '12px'
-
-  const addParagraphBtn = document.createElement('button')
-  addParagraphBtn.innerText = '添加新段落'
-  addParagraphBtn.addEventListener('click', () =>
-    insertParagraph(editorView, '新段落')
-  )
-
-  const addHeadingBtn = document.createElement('button')
-  addHeadingBtn.innerText = '添加新一级标题'
-  addHeadingBtn.addEventListener('click', () =>
-    insertHeading(editorView, '新一级标题')
-  )
-
-  const addBlockquoteBtn = document.createElement('button')
-  addBlockquoteBtn.innerText = '添加引用块'
-  addBlockquoteBtn.addEventListener('click', () =>
-    insertBlockquote(editorView, 'blockquote')
-  )
-
-  const addDateTimeBtn = document.createElement('button')
-  addDateTimeBtn.innerText = '添加时间块'
-  addDateTimeBtn.addEventListener('click', () => insertDatetime(editorView, 0))
-
-  btnGroup.appendChild(addParagraphBtn)
-  btnGroup.appendChild(addHeadingBtn)
-  btnGroup.appendChild(addBlockquoteBtn)
-  btnGroup.appendChild(addDateTimeBtn)
+  const toolbar = new Toolbar(editorView, {
+    groups: [
+      {
+        name: '段落',
+        menus: [
+          {
+            label: '添加段落',
+            handler: (props) => {
+              const { view } = props
+              insertParagraph(view, '新段落')
+            },
+          },
+          {
+            label: '添加一级标题',
+            handler: (props) => {
+              insertHeading(props.view, '新一级标题')
+            },
+          },
+          {
+            label: '添加 blockquote',
+            handler: (props) => {
+              insertBlockquote(props.view)
+            },
+          },
+          {
+            label: '添加 datetime',
+            handler: (props) => {
+              insertDatetime(props.view, Date.now())
+            },
+          },
+        ],
+      },
+      {
+        name: '格式',
+        menus: [
+          {
+            label: '加粗',
+            handler(props) {
+              setBold(props.view)
+            },
+          },
+          {
+            label: '取消加粗',
+            handler(props) {
+              unsetBold(props.view)
+            },
+          },
+        ],
+      },
+    ],
+  })
 
   const fragment = document.createDocumentFragment()
-  fragment.appendChild(btnGroup)
   fragment.appendChild(editorRoot)
 
   el.appendChild(fragment)
-
-  console.log('editorView', editorView)
 }
